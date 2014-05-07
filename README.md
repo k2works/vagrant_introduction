@@ -22,6 +22,7 @@ Vagrant公式サイトの[Getting Started](http://docs.vagrantup.com/v2/getting-
   + [片付け](#2-8)
   + [再構築](#2-9)
   + [プロバイダ](#2-10)
++ [Saharaプラグインを使う](#3)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -292,7 +293,24 @@ $ vagrant up --provider=aws
 
 もっと詳しく知りたければ[こっち](http://docs.vagrantup.com/v2/providers/)
 
+## <a name="3">Saharaプラグインを使う</a>
+
+### プラグインのインストール
+```bash
+$ vagrant plugin install sahara
+```
+
+### saharaプラグインを使う
+```bash
+$ vagrant up
+$ vagrant sandbox on
+$ vagrant sandbox rollback
+$ vagrant sandbox commit
+$ vagrant sandbox off
+```
+
 # 参考
 + [VAGRANT](http://www.vagrantup.com/)
 + [GETTING STARTED](http://docs.vagrantup.com/v2/getting-started/index.html)
 + [apt-get update fails to fetch files, “Temporary failure resolving …” error](http://askubuntu.com/questions/91543/apt-get-update-fails-to-fetch-files-temporary-failure-resolving-error)
++ [[Vagrant]saharaプラグインで仮想OS状態を管理する](http://dev.classmethod.jp/tool/vagrant-sahar/)
