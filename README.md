@@ -76,6 +76,7 @@ Bringing machine 'default' up with 'virtualbox' provider...
 
 ### <a name="2-1">プロジェクトのセットアップ</a>
 プロジェクトセットアップの最初のステップは[Vagrantfile](http://docs.vagrantup.com/v2/vagrantfile/)を使って設定する。Vagrantfileの目的は以下の２点。
+
 1. プロジェクトのルートディレクトリをマークする。Vagrantの設定のほとんどはこのルートディレクトリに関連している。
 1. どのソフトウエアをインストールするかどのようにアクセスするかを含めて、マシンの種類と実行するリソースを明記する。
 
