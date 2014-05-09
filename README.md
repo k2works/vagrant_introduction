@@ -197,14 +197,7 @@ _Vagrantfile_に以下を追加
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
   end
 ```
-_bootstrap.sh_を修正
-```bash
-#!/usr/bin/env bash
-apt-get update
-apt-get install -y apache2
-rm -rf /var/www
-ln -fs /vagrant /var/www
-```
+
 再実行
 ```bash
 $ vagrant destroy
