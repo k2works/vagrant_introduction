@@ -188,6 +188,29 @@ Vagrant.configure("2") do |config|
   config.vm.provision :shell, :path => "bootstrap.sh"
 end
 ```
+
+ネームサーバーエラーはバーチャルマシンのバグなので以下の方法で修正するように変更
+
+_Vagrantfile_に以下を追加
+```ruby
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+```
+_bootstrap.sh_を修正
+```bash
+#!/usr/bin/env bash
+apt-get update
+apt-get install -y apache2
+rm -rf /var/www
+ln -fs /vagrant /var/www
+```
+再実行
+```bash
+$ vagrant destroy
+$ vagrant up
+```
+
 "provision"の行を新しく追加してVagrantに```shell```プロビジュナーを使って```bootstrap.sh```ファイルの内容でマシンをセットアップするようにします。
 ファイルパスはプロジェクトルートの場所（Vagrantfileが設定されている場所）と関連付けれられています。
 
@@ -315,3 +338,4 @@ $ vagrant sandbox off
 + [GETTING STARTED](http://docs.vagrantup.com/v2/getting-started/index.html)
 + [apt-get update fails to fetch files, “Temporary failure resolving …” error](http://askubuntu.com/questions/91543/apt-get-update-fails-to-fetch-files-temporary-failure-resolving-error)
 + [[Vagrant]saharaプラグインで仮想OS状態を管理する](http://dev.classmethod.jp/tool/vagrant-sahar/)
++ [Vagrant / virtualbox DNS 10.0.2.3 not working](http://serverfault.com/questions/453185/vagrant-virtualbox-dns-10-0-2-3-not-working)
