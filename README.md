@@ -399,6 +399,8 @@ end
 
 ```
 
+#### 実行
+
 ```bash
 $ vagrant up --provider=aws
 Bringing machine 'default' up with 'aws' provider...
@@ -428,7 +430,7 @@ Bringing machine 'default' up with 'aws' provider...
 ==> default: Machine is booted and ready for use!
 ==> default: Rsyncing folder: /Users/k2works/projects/github/vagrant_introduction/vagrant_aws_classic/ => /vagrant
 ```
-インスタンスにログインする
+#### インスタンスにログインする
 ```bash
 $ vagrant ssh
 [fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
@@ -443,7 +445,7 @@ Run "sudo yum update" to apply all updates.
 Amazon Linux version 2014.03 is available.
 ```
 
-インスタンスを削除する
+#### インスタンスを削除する
 ```bash
 $ vagrant destroy
     default: Are you sure you want to destroy the 'default' VM? [y/N] y
@@ -451,7 +453,7 @@ $ vagrant destroy
 ==> default: Terminating the instance...
 ```
 
-うまく動かないとき
+#### うまく動かないとき
 ```bash
 $ export VAGRANT_LOG=debug
 $ vagrant up --provider=aws
@@ -465,6 +467,90 @@ $ vagrant init
 ```
 _Vagrantfile_
 ```ruby
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  #--- 以下を指定 --
+  box_name = "dummy"
+  box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
+  ssh_username = "ec2-user"
+  subnet_id = "subnet-b45640c0"
+  private_ip_address = "10.0.0.46"
+  security_groups = ["sg-29d8364c"]
+  region = "ap-northeast-1"
+  ami = "ami-b1fe9bb0"
+  instance_type = "t1.micro"
+  #--- ここまで --
+
+  config.vm.box = box_name
+  config.vm.box_url = box_url
+
+  config.vm.provider :aws do |aws, override|
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+    override.ssh.username = ssh_username
+    override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+
+    #---- VPC固有の設定 ----#
+    # リージョンを設定
+    aws.region = region
+    # サブネットIDを指定
+    aws.subnet_id = subnet_id
+    # VPC内のローカルIPを指定
+    aws.private_ip_address = private_ip_address
+    # Public Subnet内を指定した場合
+    # 自動的にEIPを取得して割り当てるので、EIPの取得上限数(5個)に注意
+    aws.elastic_ip = true
+    # セキュリティグループを設定
+    # ここではIDのリストを指定
+    aws.security_groups = security_groups
+    #---- VPC固有の設定ここまで ----#
+
+    # User-data
+    aws.user_data = "#!/bin/sh\nsed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers\n"
+    # タグを指定(任意)
+    aws.tags = aws.tags = { "Name" => "test-minimal", "env" => "dev"}
+    # AMIを指定。起動したいリージョンにあるAMI
+    aws.ami = ami
+    # インスタンスタイプを設定
+    aws.instance_type = instance_type
+  end
+end
+```
+#### 実行
+```bash
+$ vagrant up --provider=aws
+Bringing machine 'default' up with 'aws' provider...
+[fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
+==> default: HandleBoxUrl middleware is deprecated. Use HandleBox instead.
+==> default: This is a bug with the provider. Please contact the creator
+==> default: of the provider you use to fix this.
+==> default: Warning! The AWS provider doesn't support any of the Vagrant
+==> default: high-level network configurations (`config.vm.network`). They
+==> default: will be silently ignored.
+==> default: Launching an instance with the following settings...
+==> default:  -- Type: t1.micro
+==> default:  -- AMI: ami-b1fe9bb0
+==> default:  -- Region: ap-northeast-1
+==> default:  -- Keypair: k2works
+==> default:  -- Subnet ID: subnet-b45640c0
+==> default:  -- Private IP: 10.0.0.46
+==> default:  -- Elastic IP: true
+==> default:  -- User Data: yes
+==> default:  -- Security Groups: ["sg-29d8364c"]
+==> default:  -- User Data: #!/bin/sh
+==> default: sed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers
+==> default:  -- Block Device Mapping: []
+==> default:  -- Terminate On Shutdown: false
+==> default:  -- Monitoring: false
+==> default:  -- EBS optimized: false
+==> default: Warning! Vagrant might not be able to SSH into the instance.
+==> default: Please check your security groups settings.
+==> default: Waiting for instance to become "ready"...
+==> default: Waiting for SSH to become available...
+==> default: Machine is booted and ready for use!
+==> default: Rsyncing folder: /Users/k2works/projects/github/vagrant_introduction/vagrant_aws_vpc/ => /vagrant
 ```
 
 
