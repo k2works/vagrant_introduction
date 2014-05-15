@@ -23,6 +23,7 @@ Vagrant公式サイトの[Getting Started](http://docs.vagrantup.com/v2/getting-
   + [再構築](#2-9)
   + [プロバイダ](#2-10)
 + [Saharaプラグインを使う](#3)
++ [AWS対応](#4)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -326,9 +327,152 @@ $ vagrant sandbox commit
 $ vagrant sandbox off
 ```
 
+## <a name="4">AWS対応</a>
+
+### インストール
+```bash
+$ vagrant plugin install vagrant-aws
+```
+### 環境変数の設定
+```bash
+export AWS_ACCESS_KEY_ID=xxxxxxxxx AWSアクセスキー
+export AWS_SECRET_ACCESS_KEY=xxxxxxxx AWSシークレットアクセスキー
+export AWS_KEYPAIR_NAME=xxx AWSキーペア名
+export AWS_PRIVATE_KEY_PATH=./aws/xxx.pem AWS秘密鍵保存場所
+```
+
+### EC2-Classic環境で、vagrant-awsを利用する
+```bash
+$ mkdir vagrant_aws_classic
+$ cd vagrant_aws_classic/
+$ vagrant init
+```
+_Vagrantfile_
+```ruby
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  #--- 以下を指定 --
+  box_name = "dummy"
+  box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
+  ssh_username = "ec2-user"
+  security_groups = ["web"]
+  region = "ap-northeast-1"
+  availability_zone = "ap-northeast-1a"
+  ami = "ami-b1fe9bb0"
+  instance_type = "m1.medium"
+  #--- ここまで --
+
+  config.vm.box = box_name
+  config.vm.box_url = box_url
+
+  config.vm.provider :aws do |aws, override|
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+    override.ssh.username = ssh_username
+    override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+
+    #---- EC2-Classic固有の設定 ----#
+    # リージョンを設定
+    aws.region = region
+    # AZを設定
+    aws.availability_zone = availability_zone
+    # セキュリティグループを設定
+    aws.security_groups = security_groups
+    #---- EC2-Classic固有の設定ここまで ----#
+
+    # User-data
+    aws.user_data = "#!/bin/sh\nsed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers\n"
+    # タグを指定(任意)
+    aws.tags = aws.tags = { "Name" => "test-classic-default-minimal", "env" => "dev"}
+    # AMIを指定。起動したいリージョンにあるAMI
+    aws.ami = ami
+    # インスタンスタイプを設定
+    aws.instance_type = instance_type
+  end
+end
+
+```
+
+```bash
+$ vagrant up --provider=aws
+Bringing machine 'default' up with 'aws' provider...
+[fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
+==> default: HandleBoxUrl middleware is deprecated. Use HandleBox instead.
+==> default: This is a bug with the provider. Please contact the creator
+==> default: of the provider you use to fix this.
+==> default: Warning! The AWS provider doesn't support any of the Vagrant
+==> default: high-level network configurations (`config.vm.network`). They
+==> default: will be silently ignored.
+==> default: Launching an instance with the following settings...
+==> default:  -- Type: m1.medium
+==> default:  -- AMI: ami-b1fe9bb0
+==> default:  -- Region: ap-northeast-1
+==> default:  -- Availability Zone: ap-northeast-1a
+==> default:  -- Keypair: k2works
+==> default:  -- User Data: yes
+==> default:  -- Security Groups: ["web"]
+==> default:  -- User Data: #!/bin/sh
+==> default: sed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers
+==> default:  -- Block Device Mapping: []
+==> default:  -- Terminate On Shutdown: false
+==> default:  -- Monitoring: false
+==> default:  -- EBS optimized: false
+==> default: Waiting for instance to become "ready"...
+==> default: Waiting for SSH to become available...
+==> default: Machine is booted and ready for use!
+==> default: Rsyncing folder: /Users/k2works/projects/github/vagrant_introduction/vagrant_aws_classic/ => /vagrant
+```
+インスタンスにログインする
+```bash
+$ vagrant ssh
+[fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
+
+       __|  __|_  )
+       _|  (     /   Amazon Linux AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-ami/2013.09-release-notes/
+20 package(s) needed for security, out of 146 available
+Run "sudo yum update" to apply all updates.
+Amazon Linux version 2014.03 is available.
+```
+
+インスタンスを削除する
+```bash
+$ vagrant destroy
+    default: Are you sure you want to destroy the 'default' VM? [y/N] y
+[fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
+==> default: Terminating the instance...
+```
+
+うまく動かないとき
+```bash
+$ export VAGRANT_LOG=debug
+$ vagrant up --provider=aws
+```
+
+### VPC環境で、vagrant-awsを利用する
+```bash
+$ mkdir vagrant_aws_vpc
+$ cd vagrant_aws_vpc/
+$ vagrant init
+```
+_Vagrantfile_
+```ruby
+```
+
+
 # 参考
 + [VAGRANT](http://www.vagrantup.com/)
 + [GETTING STARTED](http://docs.vagrantup.com/v2/getting-started/index.html)
 + [apt-get update fails to fetch files, “Temporary failure resolving …” error](http://askubuntu.com/questions/91543/apt-get-update-fails-to-fetch-files-temporary-failure-resolving-error)
 + [[Vagrant]saharaプラグインで仮想OS状態を管理する](http://dev.classmethod.jp/tool/vagrant-sahar/)
 + [Vagrant / virtualbox DNS 10.0.2.3 not working](http://serverfault.com/questions/453185/vagrant-virtualbox-dns-10-0-2-3-not-working)
++ [mitchellh/vagrant-aws](https://github.com/mitchellh/vagrant-aws)
++ [vagrant-awsの環境別オプション指定方法](http://www.ryuzee.com/contents/blog/6807)
